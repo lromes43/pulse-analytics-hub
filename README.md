@@ -1,7 +1,7 @@
 # Welcome to your Lovable project
 
 ## Project info
-### Analytics Dashboard of a ficticious company showing users, revenue, churn rate, amongst other metrics.
+### Analytics Dashboard of a ficticious company showing users, revenue, churn rate, amongst other metrics of users across a variety of time frames (week, month, year, etc).
 
 **URL**:https://pulsetechnical.lovable.app/
 
