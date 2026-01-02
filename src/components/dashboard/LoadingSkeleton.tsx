@@ -25,9 +25,9 @@ export function StatCardSkeleton() {
   );
 }
 
-export function ChartCardSkeleton({ height = "h-[350px]" }: { height?: string }) {
+export function ChartCardSkeleton({ height = "h-[350px]", className }: { height?: string; className?: string }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-6">
+    <div className={cn("rounded-lg border border-border bg-card p-6", className)}>
       <Skeleton className="h-5 w-32 mb-2" />
       <Skeleton className="h-4 w-48 mb-6" />
       <Skeleton className={cn("w-full", height)} />
