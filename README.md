@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**:(https://pulsetechnical.lovable.app/)
+**URL**:https://pulsetechnical.lovable.app/
 
 
 **Use your preferred IDE**
