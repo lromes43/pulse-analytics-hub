@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { Users, DollarSign, TrendingUp, UserMinus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Users, DollarSign, TrendingUp, UserMinus, Database } from "lucide-react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { FilterBar } from "@/components/dashboard/FilterBar";
@@ -9,45 +9,72 @@ import { FunnelChart } from "@/components/dashboard/FunnelChart";
 import { CohortTable } from "@/components/dashboard/CohortTable";
 import { UsageHeatmap } from "@/components/dashboard/UsageHeatmap";
 import { GeoChart } from "@/components/dashboard/GeoChart";
+import { CampaignTable } from "@/components/dashboard/CampaignTable";
 import {
   StatCardSkeleton,
   ChartCardSkeleton,
   TableSkeleton,
 } from "@/components/dashboard/LoadingSkeleton";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import {
-  generateUsers,
-  generateRevenueData,
-  generateFunnelData,
-  generateCohortData,
-  generateUsageData,
-  generateGeoData,
-  generateDashboardStats,
-} from "@/lib/mockData";
+  useStats,
+  useRevenue,
+  useFunnel,
+  useCohorts,
+  useUsage,
+  useGeo,
+  useCampaigns,
+  seedDatabase,
+} from "@/hooks/useAnalytics";
 
 export default function Index() {
-  const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState("6m");
   const [segment, setSegment] = useState("all");
   const [tier, setTier] = useState("all");
+  const [isSeeding, setIsSeeding] = useState(false);
+  const { toast } = useToast();
 
-  // Generate all data
-  const users = useMemo(() => generateUsers(550), []);
-  const revenueData = useMemo(() => generateRevenueData(), []);
-  const funnelData = useMemo(() => generateFunnelData(), []);
-  const cohortData = useMemo(() => generateCohortData(), []);
-  const usageData = useMemo(() => generateUsageData(), []);
-  const geoData = useMemo(() => generateGeoData(users), [users]);
-  const stats = useMemo(() => generateDashboardStats(users, revenueData), [users, revenueData]);
+  // Fetch data from API
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useStats(tier, segment);
+  const { data: revenueData, isLoading: revenueLoading, refetch: refetchRevenue } = useRevenue();
+  const { data: funnelData, isLoading: funnelLoading, refetch: refetchFunnel } = useFunnel();
+  const { data: cohortData, isLoading: cohortLoading, refetch: refetchCohorts } = useCohorts();
+  const { data: usageData, isLoading: usageLoading, refetch: refetchUsage } = useUsage();
+  const { data: geoData, isLoading: geoLoading, refetch: refetchGeo } = useGeo(tier);
+  const { data: campaignData, isLoading: campaignLoading, refetch: refetchCampaigns } = useCampaigns();
 
-  // Simulate initial loading
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+  const isLoading = statsLoading || revenueLoading;
+  const hasNoData = !statsLoading && (!stats || stats.totalUsers === 0);
 
   const handleRefresh = () => {
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 800);
+    refetchStats();
+    refetchRevenue();
+    refetchFunnel();
+    refetchCohorts();
+    refetchUsage();
+    refetchGeo();
+    refetchCampaigns();
+  };
+
+  const handleSeedData = async () => {
+    setIsSeeding(true);
+    try {
+      const result = await seedDatabase();
+      toast({
+        title: result.success ? "Data seeded successfully" : "Seeding skipped",
+        description: result.message,
+      });
+      handleRefresh();
+    } catch (error) {
+      toast({
+        title: "Error seeding data",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSeeding(false);
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -58,6 +85,47 @@ export default function Index() {
       maximumFractionDigits: 0,
     }).format(value);
   };
+
+  // Show seed button if no data
+  if (hasNoData) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader />
+        <main className="container mx-auto px-4 py-16">
+          <div className="flex flex-col items-center justify-center gap-6 text-center">
+            <div className="rounded-full bg-primary/10 p-6">
+              <Database className="h-12 w-12 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold">No Data Found</h2>
+              <p className="text-muted-foreground max-w-md">
+                The database is empty. Click the button below to seed it with 550+ users, 
+                6 months of revenue data, usage metrics, and marketing campaigns.
+              </p>
+            </div>
+            <Button 
+              size="lg" 
+              onClick={handleSeedData} 
+              disabled={isSeeding}
+              className="gap-2"
+            >
+              {isSeeding ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Seeding Data...
+                </>
+              ) : (
+                <>
+                  <Database className="h-4 w-4" />
+                  Seed Sample Data
+                </>
+              )}
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -80,14 +148,14 @@ export default function Index() {
 
         {/* Stats Grid */}
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {isLoading ? (
+          {statsLoading ? (
             <>
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
             </>
-          ) : (
+          ) : stats ? (
             <>
               <StatCard
                 title="Total Users"
@@ -118,15 +186,15 @@ export default function Index() {
                 icon={<UserMinus className="h-5 w-5" />}
               />
             </>
-          )}
+          ) : null}
         </div>
 
         {/* Charts Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Revenue Trends */}
-          {isLoading ? (
-            <ChartCardSkeleton />
-          ) : (
+          {revenueLoading ? (
+            <ChartCardSkeleton className="lg:col-span-2" />
+          ) : revenueData ? (
             <ChartCard
               title="Revenue Trends"
               description="Monthly recurring revenue and new revenue over time"
@@ -134,36 +202,36 @@ export default function Index() {
             >
               <RevenueChart data={revenueData} />
             </ChartCard>
-          )}
+          ) : null}
 
           {/* Acquisition Funnel */}
-          {isLoading ? (
+          {funnelLoading ? (
             <ChartCardSkeleton height="h-[300px]" />
-          ) : (
+          ) : funnelData ? (
             <ChartCard
               title="Acquisition Funnel"
               description="User journey from visit to conversion"
             >
               <FunnelChart data={funnelData} />
             </ChartCard>
-          )}
+          ) : null}
 
           {/* Geographic Distribution */}
-          {isLoading ? (
+          {geoLoading ? (
             <ChartCardSkeleton height="h-[300px]" />
-          ) : (
+          ) : geoData ? (
             <ChartCard
               title="Geographic Distribution"
               description="User distribution by country"
             >
               <GeoChart data={geoData} />
             </ChartCard>
-          )}
+          ) : null}
 
           {/* Cohort Retention */}
-          {isLoading ? (
+          {cohortLoading ? (
             <TableSkeleton />
-          ) : (
+          ) : cohortData ? (
             <ChartCard
               title="Cohort Retention"
               description="Monthly user retention by signup cohort"
@@ -171,12 +239,12 @@ export default function Index() {
             >
               <CohortTable data={cohortData} />
             </ChartCard>
-          )}
+          ) : null}
 
           {/* Feature Usage Heatmap */}
-          {isLoading ? (
+          {usageLoading ? (
             <ChartCardSkeleton height="h-[250px]" />
-          ) : (
+          ) : usageData ? (
             <ChartCard
               title="Feature Usage"
               description="Daily feature usage over the last 30 days"
@@ -184,12 +252,25 @@ export default function Index() {
             >
               <UsageHeatmap data={usageData} />
             </ChartCard>
-          )}
+          ) : null}
+
+          {/* Campaign Performance */}
+          {campaignLoading ? (
+            <TableSkeleton />
+          ) : campaignData ? (
+            <ChartCard
+              title="Campaign Performance"
+              description="Marketing campaign metrics and ROI"
+              className="lg:col-span-2"
+            >
+              <CampaignTable data={campaignData} />
+            </ChartCard>
+          ) : null}
         </div>
 
         {/* Footer */}
         <footer className="mt-12 border-t border-border pt-6 text-center text-sm text-muted-foreground">
-          <p>Pulse Analytics Dashboard • Built with React & TypeScript</p>
+          <p>Pulse Analytics Dashboard • Built with React, TypeScript & Lovable Cloud</p>
         </footer>
       </main>
     </div>

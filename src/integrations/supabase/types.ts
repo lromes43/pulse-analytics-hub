@@ -14,7 +14,179 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      analytics_users: {
+        Row: {
+          acquisition_channel: Database["public"]["Enums"]["acquisition_channel"]
+          churn_date: string | null
+          churned: boolean
+          country: string
+          created_at: string
+          email: string
+          id: string
+          monthly_revenue: number
+          signup_date: string
+          subscription_tier: Database["public"]["Enums"]["subscription_tier"]
+        }
+        Insert: {
+          acquisition_channel?: Database["public"]["Enums"]["acquisition_channel"]
+          churn_date?: string | null
+          churned?: boolean
+          country?: string
+          created_at?: string
+          email: string
+          id?: string
+          monthly_revenue?: number
+          signup_date?: string
+          subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
+        }
+        Update: {
+          acquisition_channel?: Database["public"]["Enums"]["acquisition_channel"]
+          churn_date?: string | null
+          churned?: boolean
+          country?: string
+          created_at?: string
+          email?: string
+          id?: string
+          monthly_revenue?: number
+          signup_date?: string
+          subscription_tier?: Database["public"]["Enums"]["subscription_tier"]
+        }
+        Relationships: []
+      }
+      campaigns: {
+        Row: {
+          channel: Database["public"]["Enums"]["acquisition_channel"]
+          clicks: number
+          conversions: number
+          cost: number
+          created_at: string
+          id: string
+          impressions: number
+          name: string
+          revenue: number
+          start_date: string
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["acquisition_channel"]
+          clicks?: number
+          conversions?: number
+          cost?: number
+          created_at?: string
+          id?: string
+          impressions?: number
+          name: string
+          revenue?: number
+          start_date?: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["acquisition_channel"]
+          clicks?: number
+          conversions?: number
+          cost?: number
+          created_at?: string
+          id?: string
+          impressions?: number
+          name?: string
+          revenue?: number
+          start_date?: string
+        }
+        Relationships: []
+      }
+      revenue: {
+        Row: {
+          churned_revenue: number
+          created_at: string
+          date: string
+          expansion_revenue: number
+          id: string
+          mrr: number
+          new_revenue: number
+          one_time_payments: number
+          refunds: number
+        }
+        Insert: {
+          churned_revenue?: number
+          created_at?: string
+          date: string
+          expansion_revenue?: number
+          id?: string
+          mrr?: number
+          new_revenue?: number
+          one_time_payments?: number
+          refunds?: number
+        }
+        Update: {
+          churned_revenue?: number
+          created_at?: string
+          date?: string
+          expansion_revenue?: number
+          id?: string
+          mrr?: number
+          new_revenue?: number
+          one_time_payments?: number
+          refunds?: number
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          resolved_at: string | null
+          status: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          resolved_at?: string | null
+          status?: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          resolved_at?: string | null
+          status?: string
+          subject?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "analytics_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_metrics: {
+        Row: {
+          created_at: string
+          date: string
+          feature: string
+          id: string
+          usage_count: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          feature: string
+          id?: string
+          usage_count?: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          feature?: string
+          id?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +195,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      acquisition_channel:
+        | "organic"
+        | "paid_search"
+        | "social"
+        | "referral"
+        | "direct"
+        | "email"
+      subscription_tier: "free" | "starter" | "pro" | "enterprise"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +329,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      acquisition_channel: [
+        "organic",
+        "paid_search",
+        "social",
+        "referral",
+        "direct",
+        "email",
+      ],
+      subscription_tier: ["free", "starter", "pro", "enterprise"],
+    },
   },
 } as const
